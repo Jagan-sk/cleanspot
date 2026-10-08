@@ -1,0 +1,27 @@
+# --- secrets ---------------------------------------------------------
+# real config (copy of .env.example) - NEVER commit
+backend/.env
+
+# --- python ----------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# --- runtime data ----------------------------------------------------
+backend/cleanspot.db
+backend/cleanspot.db-*
+backend/uploads/
+
+# --- trained model (large binary, ~40 MB) ----------------------------
+backend/models/*.pt
+
+# --- node / frontend -------------------------------------------------
+node_modules/
+frontend/dist/
+
+# --- misc ------------------------------------------------------------
+*.log
+.DS_Store
+Thumbs.db

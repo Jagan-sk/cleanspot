@@ -1,0 +1,38 @@
+{
+  "_notice": "SAMPLE zones for the CleanSpot DEMO - these are NOT real municipal ward boundaries. Edit the boxes below to match the area where you test the app, then restart the backend.",
+  "_how_to_edit": "Each zone is a rectangle: min_lat/max_lat (south-north) and min_lng/max_lng (west-east). Keep rectangles adjacent (they should not overlap) and cover the streets you test on. id is what gets stored on complaints; name is what everyone sees in the UI.",
+  "zones": [
+    {
+      "id": "zone1",
+      "name": "Zone 1 - South West",
+      "min_lat": 12.9,
+      "max_lat": 12.96,
+      "min_lng": 77.55,
+      "max_lng": 77.62
+    },
+    {
+      "id": "zone2",
+      "name": "Zone 2 - North West",
+      "min_lat": 12.96,
+      "max_lat": 13.02,
+      "min_lng": 77.55,
+      "max_lng": 77.62
+    },
+    {
+      "id": "zone3",
+      "name": "Zone 3 - South East",
+      "min_lat": 12.9,
+      "max_lat": 12.96,
+      "min_lng": 77.62,
+      "max_lng": 77.68
+    },
+    {
+      "id": "zone4",
+      "name": "Zone 4 - North East",
+      "min_lat": 12.96,
+      "max_lat": 13.02,
+      "min_lng": 77.62,
+      "max_lng": 77.68
+    }
+  ]
+}
