@@ -95,7 +95,7 @@ def _get_model():
     try:
         import torch
 
-        path = settings.MODEL_PATH
+        path = settings.resolved_model_path
         model = torch.jit.load(str(path), map_location="cpu")
         model.eval()
         _MODEL = model
@@ -103,7 +103,7 @@ def _get_model():
         return _MODEL
     except Exception as exc:  # missing file, bad file, torch not installed...
         _MODEL_ERROR = True
-        logger.error("Could not load model '%s': %s", settings.MODEL_PATH, exc)
+        logger.error("Could not load model '%s': %s", settings.resolved_model_path, exc)
         return None
 
 

@@ -83,4 +83,5 @@ def login(payload: LoginIn, request: Request, db: Session = Depends(get_db)):
         _record_failed(ip)
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
+    _login_attempts.pop(ip, None)  # a successful login clears the failure window
     return {"token": create_access_token(user), "role": user.role, "zone_id": user.zone_id}

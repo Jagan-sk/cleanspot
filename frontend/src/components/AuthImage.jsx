@@ -13,6 +13,8 @@ export default function AuthImage({ cid, kind = 'report', eventId, alt = '', cla
   useEffect(() => {
     let objUrl = null
     let cancelled = false
+    setUrl(null)
+    setFailed(false)
     ;(async () => {
       try {
         const blob = await getPhotoBlob(eventId ? `event/${eventId}` : `${cid}/${kind}`)

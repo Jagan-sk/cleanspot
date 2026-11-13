@@ -5,7 +5,7 @@ from PIL import Image
 
 from app.config import settings
 from app.services import verifier
-from tests.helpers import submit
+from tests.helpers import CITIZEN, submit
 
 
 # ---------- decision thresholds (pure function) ----------
@@ -107,6 +107,22 @@ def test_submit_stores_accepted_decision(client, monkeypatch):
     assert body["ai_decision"] == "accepted"
     assert body["ai_confidence"] == 0.91
     assert body["status"] == "Reported"  # accepted skips human review
+
+
+def test_reject_non_garbage_is_opt_in(client, monkeypatch):
+    from app.api import citizen as citizen_api
+
+    monkeypatch.setattr(settings, "REJECT_NON_GARBAGE", True)
+    monkeypatch.setattr(
+        citizen_api,
+        "verify_image",
+        lambda p: {"is_garbage": False, "confidence": 0.1, "waste_type": None,
+                   "decision": "needs_review_low_confidence"},
+    )
+    r = submit(client, color=(33, 183, 93))
+    assert r.status_code == 422
+    assert "does not appear to contain garbage" in r.json()["detail"]
+    assert client.get("/api/citizen/complaints", headers=CITIZEN).json() == []
 
 
 def test_submit_stores_low_confidence_and_flags_review(client, monkeypatch):

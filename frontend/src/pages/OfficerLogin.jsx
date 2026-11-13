@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { login, isOfficer } from '../api'
+import { login, logout, isOfficer } from '../api'
 import ErrorBanner from '../components/ErrorBanner'
 import { ShieldIcon, LogoutIcon } from '../icons'
 
@@ -21,8 +21,7 @@ export default function OfficerLogin() {
       const data = await login(username, password)
       if (data.role === 'citizen') {
         setError('This screen is for officers and admins. Citizens use the regular login.')
-        localStorage.removeItem('token')
-        localStorage.removeItem('role')
+        logout()
         return
       }
       nav('/authority')
@@ -34,8 +33,7 @@ export default function OfficerLogin() {
   }
 
   function logoutNow() {
-    localStorage.removeItem('token')
-    localStorage.removeItem('role')
+    logout()
     window.location.reload()
   }
 

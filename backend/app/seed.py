@@ -68,6 +68,8 @@ def seed_data():
     db = SessionLocal()
     try:
         _seed_users(db)
+        citizen = db.query(User).filter(User.username == "citizen").first()
+        reporter_id = citizen.id if citizen else None
 
         if db.query(Complaint).count() == 0:
             for rel, (bg, bar, label) in SAMPLE_PHOTOS.items():
@@ -84,7 +86,7 @@ def seed_data():
                 status="Reported",
                 ai_confidence=0.95,
                 ai_decision="accepted",
-                reporter_id=1,
+                reporter_id=reporter_id,
             )
             c2 = Complaint(
                 photo_path="uploads/sample_c2.jpg",
@@ -97,7 +99,7 @@ def seed_data():
                 status="Assigned",
                 ai_confidence=0.98,
                 ai_decision="accepted",
-                reporter_id=1,
+                reporter_id=reporter_id,
             )
             db.add_all([c1, c2])
             db.commit()

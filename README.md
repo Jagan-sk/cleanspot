@@ -43,11 +43,14 @@ The app **refuses to start** without a `SECRET_KEY` unless `DEBUG=1`
 |---|---|---|
 | `citizen` | citizen | `SEED_CITIZEN_PASSWORD` (default `citizen-demo-123`) |
 | `officer` | officer (zone 1) | `SEED_OFFICER_PASSWORD` (default `officer-demo-123`) |
-| `admin` | admin | `SEED_ADMIN_PASSWORD` (default `admin-demo-123`) |
+| `admin` | admin | `SEED_ADMIN_PASSWORD` (default `admin` - authority login is **admin / admin**) |
 | `officer_zone1` .. `officer_zone4` | officer (one per sample ward) | `SEED_ZONE_OFFICER_PASSWORD` (default `zone-officer-demo-123`) |
 
 Citizens can also **register** their own account on the Login screen.
 All passwords are stored as **bcrypt hashes** - never in plain text.
+Changing a `SEED_*_PASSWORD` value in `.env` and restarting the backend
+re-hashes that account automatically, so existing databases pick up the new
+authority credential.
 
 ### Frontend
 
@@ -161,6 +164,11 @@ exported as TorchScript:
 | Input | 224x224 RGB, ImageNet normalization |
 | Output | softmax over the 2 logits; the class-1 probability is stored as `ai_confidence` |
 
+> **Provisioning:** the `.pt` file is a required runtime asset (it is no longer
+> git-ignored). Commit it with **Git LFS** or ship it with your deployment. On
+> startup the backend logs whether the model was found; if it is missing, every
+> upload falls back to human review instead of failing.
+
 The model is loaded once (on the first submission) and cached. Install the
 **CPU build** — no GPU is needed:
 
@@ -194,17 +202,21 @@ Two environment variables control what happens to a complaint:
 | `AUTO_ACCEPT` | `0.80` | `confidence >= AUTO_ACCEPT` -> **accepted** (auto) |
 | `REVIEW_BELOW` | `0.50` | `confidence >= REVIEW_BELOW` -> **needs_review** |
 | | | `confidence < REVIEW_BELOW` -> **needs_review_low_confidence** |
+| `REJECT_NON_GARBAGE` | `0` | when `1`, a confident *not garbage* photo is refused (HTTP 422) |
 
 ```bash
 # in backend/.env  (example: be stricter before auto-accepting)
 AUTO_ACCEPT=0.90
 REVIEW_BELOW=0.60
+# optional: refuse photos the model is confident are not garbage
+REJECT_NON_GARBAGE=0
 ```
 
-A complaint is **never rejected automatically** - low confidence still creates
-the complaint and flags it for human review. If the two values are set to
-something invalid (`REVIEW_BELOW >= AUTO_ACCEPT`), the older
-`AI_CONFIDENCE_THRESHOLD` (default `0.7`) is used as a fallback.
+By default a complaint is **never rejected automatically** - low confidence
+still creates the complaint and flags it for human review. Set
+`REJECT_NON_GARBAGE=1` if you want the classifier to act as a gate. If the two
+threshold values are set to something invalid (`REVIEW_BELOW >= AUTO_ACCEPT`),
+the older `AI_CONFIDENCE_THRESHOLD` (default `0.7`) is used as a fallback.
 
 Decisions are stored per complaint in `ai_decision` and shown as a badge
 (Accepted / Needs review) in the Authority view.

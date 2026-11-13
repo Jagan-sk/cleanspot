@@ -84,3 +84,11 @@ def test_reopen_requires_resolved_or_confirmed(client):
     r = client.post(f"/api/citizen/complaints/{cid}/reopen", headers=CITIZEN)
     assert r.status_code == 200
     assert r.json()["status"] == "Reopened"
+
+
+def test_only_reporter_can_reopen(client):
+    cid = submit(client).json()["id"]
+    _resolve(client, cid)
+    # an officer in the same zone can read it, but reopening is the reporter's call
+    r = client.post(f"/api/citizen/complaints/{cid}/reopen", headers=OFFICER)
+    assert r.status_code == 403

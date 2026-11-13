@@ -28,6 +28,11 @@ def is_rate_limited(db: Session, reporter_id: int | None, ip_address: str | None
 
 
 def record_submission(db: Session, reporter_id: int | None, ip_address: str | None):
+    # Keep the anti-abuse table from growing forever; only the 1h window matters.
+    cutoff = utcnow() - timedelta(hours=24)
+    db.query(RateLimitRecord).filter(RateLimitRecord.created_at < cutoff).delete(
+        synchronize_session=False
+    )
     db.add(RateLimitRecord(reporter_id=reporter_id, ip_address=ip_address or "unknown"))
     db.commit()
 

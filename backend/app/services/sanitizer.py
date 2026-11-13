@@ -39,7 +39,13 @@ def sanitize_upload(raw: bytes, upload_dir: str) -> tuple[str, str, str]:
         raise InvalidImageError("File is not a valid image")
 
     fmt = (img.format or "").upper()  # format from CONTENT, not extension
-    if fmt not in ALLOWED_FORMATS:
+    allowed_exts = settings.allowed_image_extensions or set(ALLOWED_FORMATS.values())
+    allowed_formats = {
+        f
+        for f, ext in ALLOWED_FORMATS.items()
+        if ext in allowed_exts or (f == "JPEG" and ".jpeg" in allowed_exts)
+    }
+    if fmt not in allowed_formats:
         raise InvalidImageError("File is not a valid image")
 
     img = ImageOps.exif_transpose(img)

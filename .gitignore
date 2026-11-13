@@ -14,8 +14,14 @@ backend/cleanspot.db
 backend/cleanspot.db-*
 backend/uploads/
 
-# --- trained model (large binary, ~40 MB) ----------------------------
-backend/models/*.pt
+# --- trained model ---------------------------------------------------
+# The TorchScript classifier is required for AI detection. Track it with
+# Git LFS (recommended) or a release/download step; do not leave it out of
+# a deployment, otherwise every upload falls back to human review.
+# backend/models/*.pt
+
+# --- test artifacts --------------------------------------------------
+backend/tests/test_cleanspot.db
 
 # --- node / frontend -------------------------------------------------
 node_modules/

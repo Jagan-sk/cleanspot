@@ -60,6 +60,8 @@ Base.metadata.create_all(bind=engine)
 
 def _migrate() -> None:
     """Add columns that newer code expects to an existing SQLite database."""
+    if not settings.DATABASE_URL.startswith("sqlite"):
+        return
     with engine.connect() as conn:
         cols = [row[1] for row in conn.execute(text("PRAGMA table_info(complaints)"))]
         if "ai_decision" not in cols:
@@ -103,6 +105,15 @@ _backfill_zones()
 settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 # NOTE: uploads are intentionally NOT mounted as static files - photos are
 # served through the authenticated GET /api/photos/{id}/{kind} endpoint.
+
+_model_path = settings.resolved_model_path
+if _model_path.is_file():
+    log.info("AI classifier available at %s", _model_path)
+else:
+    log.warning(
+        "AI classifier missing at %s - every upload will fall back to human review",
+        _model_path,
+    )
 
 app.include_router(citizen.router)
 app.include_router(municipal.router)

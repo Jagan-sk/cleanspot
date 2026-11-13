@@ -138,7 +138,12 @@ export default function Review() {
       <h1>Review & Submit</h1>
       <img src={photo.url} alt="preview" className="photo-preview" />
       <ErrorBanner message={error} />
-      {!isLoggedIn() && <p className="muted" style={{ marginBottom: 8 }}>Tip: log in first so the report lands in your account.</p>}
+      {!isLoggedIn() && (
+        <p className="muted" style={{ marginBottom: 8 }}>
+          You need to log in before submitting.{' '}
+          <a href="/login" onClick={(e) => { e.preventDefault(); nav('/login') }}>Go to login</a>
+        </p>
+      )}
       {geoLoading && <Spinner text="Getting GPS..." />}
       {!geoLoading && (
         <div className="card">
@@ -163,7 +168,7 @@ export default function Review() {
           <option value="Hazardous">Hazardous</option>
         </select>
       </div>
-      <button onClick={handleSubmit} disabled={loading || lat == null || lng == null}>
+      <button onClick={handleSubmit} disabled={loading || lat == null || lng == null || !isLoggedIn()}>
         {loading ? 'Submitting...' : 'Submit report'}
       </button>
     </div>

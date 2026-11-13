@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getStats, isLoggedIn } from '../api'
+import { getStats, getZones, isLoggedIn } from '../api'
 import ErrorBanner from '../components/ErrorBanner'
 import Skeleton from '../components/Skeleton'
 import { ChartIcon, FlameIcon, PinIcon } from '../icons'
@@ -28,13 +28,17 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selKey, setSelKey] = useState(null)
+  const [zones, setZones] = useState([])
+  const [zoneFilter, setZoneFilter] = useState('all')
   const nav = useNavigate()
+  const role = localStorage.getItem('role')
+  const isAdmin = role === 'admin'
 
-  async function load() {
+  async function load(zoneArg) {
     setLoading(true)
     setError('')
     try {
-      const s = await getStats()
+      const s = await getStats(8, zoneArg ?? (isAdmin ? zoneFilter : undefined))
       setStats(s)
       setSelKey(k => k ?? s.monthly[s.monthly.length - 1].key)
     } catch (e) {
@@ -45,9 +49,17 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    if (isLoggedIn()) load()
-    else setLoading(false)
+    if (isLoggedIn()) {
+      load()
+      if (isAdmin) getZones().then(r => setZones(r.zones)).catch(() => {})
+    } else setLoading(false)
   }, [])
+
+  function changeZone(z) {
+    setZoneFilter(z)
+    setSelKey(null)
+    load(z)
+  }
 
   if (!isLoggedIn()) {
     return (
@@ -91,6 +103,17 @@ export default function Dashboard() {
   return (
     <div className="container">
       <h1>Dashboard</h1>
+      {isAdmin && (
+        <label>Zone
+          <select value={zoneFilter} onChange={(e) => changeZone(e.target.value)}>
+            <option value="all">All zones</option>
+            {zones.map(z => (
+              <option key={z.id} value={z.id}>{z.name}</option>
+            ))}
+            <option value="unassigned">Unassigned</option>
+          </select>
+        </label>
+      )}
       <ErrorBanner message={error} />
 
       <div className="kpi-grid">

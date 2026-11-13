@@ -3,6 +3,26 @@ function authHeaders(extra = {}) {
   return token ? { Authorization: `Bearer ${token}`, ...extra } : extra
 }
 
+function clearAuth() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('role')
+  localStorage.removeItem('zone')
+}
+
+// fetch for protected routes: attaches the token and handles an expired/forged
+// session once, instead of every page showing a "please log in" error.
+async function authFetch(url, options = {}) {
+  const res = await fetch(url, { ...options, headers: authHeaders(options.headers) })
+  if (res.status === 401) {
+    clearAuth()
+    const path = window.location.pathname
+    if (path !== '/login' && path !== '/officer-login') {
+      window.location.assign('/login')
+    }
+  }
+  return res
+}
+
 async function toError(res, fallback) {
   let msg = fallback
   try {
@@ -25,23 +45,22 @@ export function isOfficer() {
 }
 
 export async function uploadSubmit(formData) {
-  const res = await fetch('/api/citizen/submit', {
+  const res = await authFetch('/api/citizen/submit', {
     method: 'POST',
-    body: formData,
-    headers: authHeaders()
+    body: formData
   })
   if (!res.ok) throw await toError(res, 'Submit failed')
   return res.json()
 }
 
 export async function getMyReports() {
-  const res = await fetch('/api/citizen/complaints', { headers: authHeaders() })
+  const res = await authFetch('/api/citizen/complaints')
   if (!res.ok) throw await toError(res, 'Failed to load reports')
   return res.json()
 }
 
 export async function getComplaint(id) {
-  const res = await fetch(`/api/citizen/complaints/${id}`, { headers: authHeaders() })
+  const res = await authFetch(`/api/citizen/complaints/${id}`)
   if (!res.ok) throw await toError(res, 'Failed to load complaint')
   return res.json()
 }
@@ -49,19 +68,17 @@ export async function getComplaint(id) {
 export async function confirmCleanup(id, file) {
   const fd = new FormData()
   if (file) fd.append('image', file)
-  const res = await fetch(`/api/citizen/complaints/${id}/confirm`, {
+  const res = await authFetch(`/api/citizen/complaints/${id}/confirm`, {
     method: 'POST',
-    body: fd,
-    headers: authHeaders()
+    body: fd
   })
   if (!res.ok) throw await toError(res, 'Confirm failed')
   return res.json()
 }
 
 export async function reopen(id) {
-  const res = await fetch(`/api/citizen/complaints/${id}/reopen`, {
-    method: 'POST',
-    headers: authHeaders()
+  const res = await authFetch(`/api/citizen/complaints/${id}/reopen`, {
+    method: 'POST'
   })
   if (!res.ok) throw await toError(res, 'Reopen failed')
   return res.json()
@@ -97,22 +114,23 @@ export async function register(username, password) {
 }
 
 export function logout() {
-  localStorage.removeItem('token')
-  localStorage.removeItem('role')
+  clearAuth()
 }
 
 // --- photos (authenticated - uploads are not public anymore) ---------------
 
 // Fetch a photo as a blob URL. path is e.g. "3/report" or "event/12"
 export async function getPhotoBlob(path) {
-  const res = await fetch(`/api/photos/${path}`, { headers: authHeaders() })
+  const res = await authFetch(`/api/photos/${path}`)
   if (!res.ok) throw await toError(res, 'No photo')
   return res.blob()
 }
 
 // Aggregated dashboard statistics
-export async function getStats(months = 8) {
-  const res = await fetch(`/api/stats?months=${months}`, { headers: authHeaders() })
+export async function getStats(months = 8, zone) {
+  const params = new URLSearchParams({ months: String(months) })
+  if (zone && zone !== 'all') params.set('zone', zone)
+  const res = await authFetch(`/api/stats?${params}`)
   if (!res.ok) throw await toError(res, 'Failed to load statistics')
   return res.json()
 }
@@ -121,22 +139,21 @@ export async function getStats(months = 8) {
 // ("all" | "zone1".."zone4" | "unassigned"); officers always get their own zone.
 export async function municipalList(zone) {
   const qs = zone && zone !== 'all' ? `?zone=${encodeURIComponent(zone)}` : ''
-  const res = await fetch(`/municipal/complaints${qs}`, { headers: authHeaders() })
+  const res = await authFetch(`/municipal/complaints${qs}`)
   if (!res.ok) throw await toError(res, 'Failed to load queue')
   return res.json()
 }
 
 // Sample zones from app/config/zones.json (map rectangles + headers)
 export async function getZones() {
-  const res = await fetch('/api/zones', { headers: authHeaders() })
+  const res = await authFetch('/api/zones')
   if (!res.ok) throw await toError(res, 'Failed to load zones')
   return res.json()
 }
 
 export async function assignComplaint(id) {
-  const res = await fetch(`/municipal/complaints/${id}/assign`, {
-    method: 'POST',
-    headers: authHeaders()
+  const res = await authFetch(`/municipal/complaints/${id}/assign`, {
+    method: 'POST'
   })
   if (!res.ok) throw await toError(res, 'Assign failed')
   return res.json()
@@ -147,10 +164,9 @@ export async function resolveComplaint(id, note, photoFile) {
   const fd = new FormData()
   if (note) fd.append('note', note)
   if (photoFile) fd.append('photo', photoFile)
-  const res = await fetch(`/municipal/complaints/${id}/resolve`, {
+  const res = await authFetch(`/municipal/complaints/${id}/resolve`, {
     method: 'POST',
-    body: fd,
-    headers: authHeaders()
+    body: fd
   })
   if (!res.ok) throw await toError(res, 'Resolve failed')
   return res.json()

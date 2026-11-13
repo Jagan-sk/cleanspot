@@ -5,6 +5,7 @@ import os
 from PIL import Image
 
 from app.config import settings
+from app.models import Complaint
 from tests.helpers import ADMIN, CITIZEN, OFFICER, image_file, make_image_bytes, submit
 
 
@@ -185,6 +186,21 @@ def test_admin_can_delete_complaint_and_files(client, db):
     assert r.json()["deleted"] is True
     assert not abs_path.exists()
     assert client.get(f"/api/citizen/complaints/{cid}", headers=CITIZEN).status_code == 404
+
+
+def test_admin_delete_original_with_duplicates(client, db):
+    """Regression: deleting an original complaint that has duplicate links must
+    not raise a foreign-key error; linked duplicates are removed too."""
+    first = submit(client, lat=12.93, lon=77.58, color=(71, 72, 73)).json()
+    dup = submit(client, lat=12.93, lon=77.5802, color=(74, 75, 76)).json()
+    assert dup["status"] == "Duplicate"
+    assert dup["duplicate_of"] == first["id"]
+
+    r = client.delete(f"/admin/complaints/{first['id']}", headers=ADMIN)
+    assert r.status_code == 200, r.text
+    assert r.json()["deleted"] is True
+    assert db.get(Complaint, first["id"]) is None
+    assert db.get(Complaint, dup["id"]) is None
 
 
 def test_security_headers_present(client):

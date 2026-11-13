@@ -102,10 +102,22 @@ async def submit_report(
         os.remove(abs_path)
         raise HTTPException(status_code=400, detail="Duplicate photo already submitted")
 
-    # AI verify (never rejects - low confidence just flags human review)
+    # AI verify. By default low confidence only flags human review; if
+    # REJECT_NON_GARBAGE is enabled, a confident "not garbage" result is refused.
     ai = verify_image(abs_path)
     confidence = ai.get("confidence", 0.0)
     decision = ai.get("decision", "needs_review")
+
+    if (
+        settings.REJECT_NON_GARBAGE
+        and decision == "needs_review_low_confidence"
+        and not ai.get("is_garbage")
+    ):
+        os.remove(abs_path)
+        raise HTTPException(
+            status_code=422,
+            detail="This photo does not appear to contain garbage. Please submit a photo of the waste dump.",
+        )
 
     # check duplicates by location (30 m): link via duplicate_of instead of
     # creating another open item
@@ -217,6 +229,8 @@ def reopen(
     user: User = Depends(get_current_user),
 ):
     c = _accessible_complaint(db, complaint_id, user)
+    if user.role != "citizen" or c.reporter_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the reporter can reopen this complaint")
     if c.status not in ("Resolved", "Confirmed"):
         raise HTTPException(status_code=400, detail="Cannot reopen unless resolved")
     c.status = "Reopened"
